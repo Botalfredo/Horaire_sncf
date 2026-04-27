@@ -3,7 +3,22 @@ String ID_TOULOUSE = "stop_area:SNCF:87611004";
 
 
 void fetchJourneysData(JourneyData &data) {
+  Serial.println("fetchJourneysData");
   data.count = 0;
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Pas de wifi tentative de connection");
+    WiFi.mode(WIFI_STA);
+    WiFi.disconnect(true);
+    WiFi.setHostname("INFO-455350");
+
+    WiFi.begin(ssid, password);
+    WiFi.setTxPower(WIFI_POWER_8_5dBm);
+    Serial.print("Connexion au WiFi");
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+  }
 
   if (WiFi.status() == WL_CONNECTED) {
     WiFiClientSecure client;
@@ -46,7 +61,7 @@ void fetchJourneysData(JourneyData &data) {
           timeout = true;
           break;
         }
-        delay(1);  // Laisse le watchdog de l'ESP32 respirer
+        delay(1);
       }
       Serial.println("\n=== BILAN DU TELECHARGEMENT ===");
       Serial.print("Octets attendus  : ");
