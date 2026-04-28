@@ -1,6 +1,15 @@
 // Variables globales pour mémoriser l'état précédent
-MergedTrain anciensTrains[5]; 
+MergedTrain anciensTrains[5];
 bool premierAffichage = true;
+
+
+void init_screen() {
+  SPI.begin(EPD_SCL, EPD_MISO, EPD_SDA, EPD_CS);
+  display.init(115200, true, 2, false);
+  display.setRotation(1);  // Paysage
+  display.setFont(&FreeSans9pt7b);
+  display.setFullWindow();
+}
 
 // =========================================================================
 // FONCTION UTILITAIRE : Dessine UNE SEULE ligne de train
@@ -32,17 +41,17 @@ void dessinerLigneTrain(const MergedTrain &train, int index, int startY, int esp
 
     int hauteurLigne = y - (h / 2) + 2;
     display.drawLine(x, hauteurLigne, x + w, hauteurLigne, GxEPD_RED);
-    display.drawLine(x, hauteurLigne - 1, x + w, hauteurLigne - 1, GxEPD_RED); 
+    display.drawLine(x, hauteurLigne - 1, x + w, hauteurLigne - 1, GxEPD_RED);
 
     // On décale le curseur pour écrire l'heure réelle
-    x += w + 8; 
+    x += w + 8;
     display.setTextColor(GxEPD_RED);
     display.setCursor(x, y);
     display.print(train.reel);
   }
 
   // -- 2. AFFICHAGE DU STATUT / ALERTE --
-  x = 110; 
+  x = 110;
   display.setCursor(x, y);
 
   if (!enRetard && !aUneAlerte) {
@@ -53,7 +62,7 @@ void dessinerLigneTrain(const MergedTrain &train, int index, int startY, int esp
     if (aUneAlerte) {
       display.print(enleverAccents(train.alerteMsg.substring(0, 22)));
     } else {
-      display.print(enleverAccents(train.retardStr)); 
+      display.print(enleverAccents(train.retardStr));
     }
   }
 }
@@ -75,11 +84,11 @@ void afficherHorairesTrains(const MergedData &affichageFinal) {
       display.fillScreen(GxEPD_WHITE);
       for (int i = 0; i < affichageFinal.count; i++) {
         dessinerLigneTrain(affichageFinal.trains[i], i, startY, espacementY);
-        anciensTrains[i] = affichageFinal.trains[i]; 
+        anciensTrains[i] = affichageFinal.trains[i];
       }
       // On s'assure de vider les lignes restantes en mémoire
       for (int i = affichageFinal.count; i < 5; i++) {
-         anciensTrains[i] = MergedTrain();
+        anciensTrains[i] = MergedTrain();
       }
     } while (display.nextPage());
 
@@ -93,16 +102,14 @@ void afficherHorairesTrains(const MergedData &affichageFinal) {
     int lastChanged = -1;
 
     // 1. On cherche quelle est la zone affectée par les changements
-    for (int i = 0; i < 5; i++) { // On vérifie toujours les 5 emplacements possibles
+    for (int i = 0; i < 5; i++) {  // On vérifie toujours les 5 emplacements possibles
       bool existsNow = (i < affichageFinal.count);
-      bool existedBefore = (anciensTrains[i].prevu != ""); 
+      bool existedBefore = (anciensTrains[i].prevu != "");
 
       bool changed = false;
-      
+
       if (existsNow) {
-        if (affichageFinal.trains[i].prevu != anciensTrains[i].prevu || 
-            affichageFinal.trains[i].reel != anciensTrains[i].reel || 
-            affichageFinal.trains[i].alerteMsg != anciensTrains[i].alerteMsg) {
+        if (affichageFinal.trains[i].prevu != anciensTrains[i].prevu || affichageFinal.trains[i].reel != anciensTrains[i].reel || affichageFinal.trains[i].alerteMsg != anciensTrains[i].alerteMsg) {
           changed = true;
         }
       } else if (existedBefore) {
@@ -118,7 +125,7 @@ void afficherHorairesTrains(const MergedData &affichageFinal) {
 
     // 2. S'il y a eu un changement, on met à jour en UNE SEULE FOIS
     if (firstChanged != -1) {
-      
+
       int windowY = (startY + (firstChanged * espacementY)) - 20;
       int nbLignes = (lastChanged - firstChanged) + 1;
       int windowHeight = nbLignes * espacementY;
@@ -130,7 +137,7 @@ void afficherHorairesTrains(const MergedData &affichageFinal) {
       do {
         // On efface la zone en blanc
         display.fillRect(0, windowY, display.width(), windowHeight, GxEPD_WHITE);
-        
+
         // On redessine uniquement les trains présents dans cette zone
         for (int i = firstChanged; i <= lastChanged; i++) {
           if (i < affichageFinal.count) {
@@ -144,7 +151,7 @@ void afficherHorairesTrains(const MergedData &affichageFinal) {
         if (i < affichageFinal.count) {
           anciensTrains[i] = affichageFinal.trains[i];
         } else {
-          anciensTrains[i] = MergedTrain(); // Structure vide pour effacer la mémoire
+          anciensTrains[i] = MergedTrain();  // Structure vide pour effacer la mémoire
         }
       }
     }
@@ -165,7 +172,7 @@ String enleverAccents(String texte) {
   texte.replace("ô", "o");
   texte.replace("ù", "u");
   texte.replace("û", "u");
-  
+
   // Majuscules
   texte.replace("É", "E");
   texte.replace("È", "E");
@@ -178,10 +185,10 @@ String enleverAccents(String texte) {
   for (int i = 0; i < texte.length(); i++) {
     char c = texte[i];
     // On garde uniquement les caractères de la table ASCII standard
-    if (c >= 32 && c <= 126) { 
+    if (c >= 32 && c <= 126) {
       textePropre += c;
     }
   }
-  
+
   return textePropre;
 }

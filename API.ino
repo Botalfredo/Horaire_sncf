@@ -3,36 +3,23 @@ String ID_TOULOUSE = "stop_area:SNCF:87611004";
 
 
 void fetchJourneysData(JourneyData &data) {
-  Serial.println("fetchJourneysData");
+  Serial.println("fetchJourneysData()");
   data.count = 0;
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Pas de wifi tentative de connection");
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect(true);
-    WiFi.setHostname("INFO-455350");
-
-    WiFi.begin(ssid, password);
-    WiFi.setTxPower(WIFI_POWER_8_5dBm);
-    Serial.print("Connexion au WiFi");
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(500);
-      Serial.print(".");
-    }
-  }
 
   if (WiFi.status() == WL_CONNECTED) {
     WiFiClientSecure client;
+
     client.setInsecure();
-    client.setTimeout(20000);  // 20 secondes de timeout pour le TCP/SSL
+    client.setTimeout(20000);
 
     HTTPClient http;
-    http.setTimeout(20000);  // 20 secondes de timeout pour le HTTP
+    http.setTimeout(20000);
 
     String url = "https://api.navitia.io/v1/coverage/sncf/journeys?from=stop_area:SNCF:87612002&to=stop_area:SNCF:87611004&min_nb_journeys=5";
 
     http.begin(client, url);
     http.setAuthorization(api_key, "");
-    http.useHTTP10(true);  //forcer un flux continu (désactive le chunked encoding)
+    http.useHTTP10(true);
 
     int httpCode = http.GET();
 
@@ -41,7 +28,7 @@ void fetchJourneysData(JourneyData &data) {
 
     if (httpCode == 200) {
       int expectedLen = http.getSize();
-      Serial.print("Taille attendue (Content-Length) : " + String(expectedLen));
+      Serial.print("Expected lenth " + String(expectedLen));
 
       WiFiClient *stream = http.getStreamPtr();
 
@@ -63,12 +50,10 @@ void fetchJourneysData(JourneyData &data) {
         }
         delay(1);
       }
-      Serial.println("\n=== BILAN DU TELECHARGEMENT ===");
-      Serial.print("Octets attendus  : ");
-      Serial.println(expectedLen);
-      Serial.print("Octets reçus     : ");
+      Serial.print("Receive ");
       Serial.println(bytesReceived);
 
+      /*
       if (timeout) {
         Serial.println("-> CONCLUSION : Le serveur SNCF a arrêté d'envoyer des données (Timeout).");
       } else if (expectedLen > 0 && bytesReceived < expectedLen) {
@@ -77,12 +62,12 @@ void fetchJourneysData(JourneyData &data) {
         Serial.println("-> CONCLUSION : SUCCES ! Tout le fichier a été téléchargé. Le problème vient donc d'ArduinoJson.");
       }
       Serial.println("===============================\n");
+      */
 
     } else {
       Serial.print("Erreur HTTP Journeys: ");
       Serial.println(httpCode);
     }
-
     http.end();  // Libère proprement la connexion
   } else {
     Serial.println("Erreur : WiFi non connecté.");
@@ -90,6 +75,7 @@ void fetchJourneysData(JourneyData &data) {
 }
 
 void fetchDepartures(DepartureData &data) {
+  Serial.println("fetchDepartures");
   data.count = 0;  // Réinitialise le compteur
 
   if (WiFi.status() == WL_CONNECTED) {

@@ -1,3 +1,7 @@
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <WiFiClientSecure.h>
+#include <SPI.h>
 
 // --- Définition de vos broches ESP32-C3 ---
 #define EPD_BUSY 21
