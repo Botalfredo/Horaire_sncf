@@ -3,7 +3,7 @@ String ID_TOULOUSE = "stop_area:SNCF:87611004";
 
 
 void fetchJourneysData(JourneyData &data) {
-  Serial.println("fetchJourneysData()");
+  Serial.println("\nfetchJourneysData()");
   data.count = 0;
 
   if (WiFi.status() == WL_CONNECTED) {
@@ -36,8 +36,6 @@ void fetchJourneysData(JourneyData &data) {
       unsigned long lastDataTime = millis();
       bool timeout = false;
 
-      Serial.println("Début de la lecture du flux réseau (Test de comptage en cours)...");
-
       while (http.connected()) {
         while (stream->available()) {
           stream->read();
@@ -50,19 +48,8 @@ void fetchJourneysData(JourneyData &data) {
         }
         delay(1);
       }
-      Serial.print("Receive ");
+      Serial.print(" Receive ");
       Serial.println(bytesReceived);
-
-      /*
-      if (timeout) {
-        Serial.println("-> CONCLUSION : Le serveur SNCF a arrêté d'envoyer des données (Timeout).");
-      } else if (expectedLen > 0 && bytesReceived < expectedLen) {
-        Serial.println("-> CONCLUSION : La connexion a été fermée prématurément (Buffer SSL plein ou coupure réseau).");
-      } else {
-        Serial.println("-> CONCLUSION : SUCCES ! Tout le fichier a été téléchargé. Le problème vient donc d'ArduinoJson.");
-      }
-      Serial.println("===============================\n");
-      */
 
     } else {
       Serial.print("Erreur HTTP Journeys: ");
@@ -75,7 +62,7 @@ void fetchJourneysData(JourneyData &data) {
 }
 
 void fetchDepartures(DepartureData &data) {
-  Serial.println("fetchDepartures");
+  Serial.println("\nfetchDepartures");
   data.count = 0;  // Réinitialise le compteur
 
   if (WiFi.status() == WL_CONNECTED) {
@@ -168,7 +155,7 @@ void fetchDepartures(DepartureData &data) {
 
 void printJourneyData(const JourneyData &data) {
   Serial.println("------------------------------------------------------------");
-  Serial.printf(" 🚆 RESULTATS API : %d TRAIN(S) TROUVE(S)\n", data.count);
+  Serial.printf(" printJourneyData\n", data.count);
   Serial.println("------------------------------------------------------------");
 
   for (int i = 0; i < data.count; i++) {
@@ -188,7 +175,7 @@ void printJourneyData(const JourneyData &data) {
 
 void printDepartureData(const DepartureData &data) {
   Serial.println("=========================================================================================");
-  Serial.println("🚆 PROCHAINS DEPARTS : LABEGE -> TOULOUSE");
+  Serial.println("printDepartureData");
   Serial.println("=========================================================================================");
   Serial.printf("%-10s | %-5s | %-5s | %-12s | %s\n", "N Train", "Prevu", "Reel", "Retard", "Avertissements SNCF");
   Serial.println("-----------------------------------------------------------------------------------------");

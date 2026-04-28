@@ -21,10 +21,11 @@ void setup() {
 
   init_IO();
 
-  init_WiFi();
-
   init_screen();
 
+  init_WiFi();
+
+  init_Time();
 }
 
 void loop() {
@@ -36,23 +37,23 @@ void loop() {
 
     Serial.println("=== Cycle API ecran ===");
 
-    // 1. Collecte et fusion des données
     JourneyData mesJourneys;
     DepartureData mesDepartures;
     MergedData affichageFinal;
 
     fetchJourneysData(mesJourneys);
+    printJourneyData(mesJourneys);
+
     fetchDepartures(mesDepartures);
+    printDepartureData(mesDepartures);
+
     fusionnerDonnees(mesJourneys, mesDepartures, affichageFinal);
     printMergedData(affichageFinal);
 
-    // 2. Affichage sur l'écran E-paper
     afficherHorairesTrains(affichageFinal);
 
-    // 3. Calcul de la prochaine échéance
     planifierProchainRafraichissement(affichageFinal);
 
-    // 4. On réinitialise le chronomètre pour le compte à rebours
     chronometreMinute = millis();
   }
 
