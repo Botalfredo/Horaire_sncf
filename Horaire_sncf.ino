@@ -22,6 +22,7 @@ void setup() {
   init_IO();
 
   init_screen();
+  //afficherEcranDemarrage();
 
   init_WiFi();
 

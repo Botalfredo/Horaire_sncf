@@ -7,7 +7,7 @@ void init_WiFi() {
 
   WiFi.setHostname("INFO-455350");
   WiFi.begin(ssid, password);
-  WiFi.setTxPower(WIFI_POWER_11dBm);
+  WiFi.setTxPower(WIFI_POWER_15dBm );
   Serial.print("Connexion au WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);

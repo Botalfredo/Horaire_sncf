@@ -1,6 +1,35 @@
 String ID_LABEGE = "stop_area:SNCF:87612002";
 String ID_TOULOUSE = "stop_area:SNCF:87611004";
 
+class BufferedStream : public Stream {
+  Stream& _stream;
+  uint8_t _buffer[512];
+  size_t _head, _tail;
+public:
+  BufferedStream(Stream& s) : _stream(s), _head(0), _tail(0) {}
+  int available() override {
+    if (_head < _tail) return _tail - _head;
+    return _stream.available();
+  }
+  int read() override {
+    if (_head >= _tail) {
+      _head = 0;
+      _tail = _stream.readBytes(_buffer, sizeof(_buffer));
+      if (_tail == 0) return -1;
+    }
+    return _buffer[_head++];
+  }
+  int peek() override {
+    if (_head >= _tail) {
+      _head = 0;
+      _tail = _stream.readBytes(_buffer, sizeof(_buffer));
+      if (_tail == 0) return -1;
+    }
+    return _buffer[_head];
+  }
+  void flush() override { _stream.flush(); }
+  size_t write(uint8_t c) override { return _stream.write(c); }
+};
 
 void fetchJourneysData(JourneyData &data) {
   Serial.println("\nfetchJourneysData()");
@@ -8,14 +37,13 @@ void fetchJourneysData(JourneyData &data) {
 
   if (WiFi.status() == WL_CONNECTED) {
     WiFiClientSecure client;
-
     client.setInsecure();
     client.setTimeout(20000);
 
     HTTPClient http;
     http.setTimeout(20000);
 
-    String url = "https://api.navitia.io/v1/coverage/sncf/journeys?from=stop_area:SNCF:87612002&to=stop_area:SNCF:87611004&min_nb_journeys=5";
+    String url = "https://api.navitia.io/v1/coverage/sncf/journeys?from=stop_area:SNCF:87612002&to=stop_area:SNCF:87611004&min_nb_journeys=4";
 
     http.begin(client, url);
     http.setAuthorization(api_key, "");
@@ -27,35 +55,54 @@ void fetchJourneysData(JourneyData &data) {
     Serial.println(httpCode);
 
     if (httpCode == 200) {
-      int expectedLen = http.getSize();
-      Serial.print("Expected lenth " + String(expectedLen));
+      // On enveloppe le flux Wi-Fi dans notre lecteur rapide (Buffer)
+      BufferedStream buffStream(*http.getStreamPtr());
 
-      WiFiClient *stream = http.getStreamPtr();
+      // On filtre uniquement ce dont on a besoin pour soulager la RAM
+      DynamicJsonDocument filter(512);
+      filter["journeys"][0]["departure_date_time"] = true;
 
-      int bytesReceived = 0;
-      unsigned long lastDataTime = millis();
-      bool timeout = false;
+      // On alloue la mémoire pour le JSON filtré
+      DynamicJsonDocument doc(4096);
 
-      while (http.connected()) {
-        while (stream->available()) {
-          stream->read();
-          bytesReceived++;
-          lastDataTime = millis();
+      // On désérialise depuis notre flux rapide
+      DeserializationError error = deserializeJson(doc, buffStream, DeserializationOption::Filter(filter));
+
+      if (error) {
+        Serial.print("Erreur JSON (Journeys): ");
+        Serial.println(error.c_str());
+      } else {
+        JsonArray journeys = doc["journeys"];
+        
+        for (JsonObject journey : journeys) {
+          if (data.count >= MAX_TRAINS) break;
+
+          // Récupération de la chaîne brute "YYYYMMDDTHHMMSS"
+          String rawPrevu = journey["departure_date_time"].as<String>();
+          
+          if (rawPrevu != "null" && rawPrevu.length() >= 15) {
+            // Extraction de HH:MM pour correspondre à la logique de ton afficheur
+            data.trains[data.count].prevu = rawPrevu.substring(9, 11) + ":" + rawPrevu.substring(11, 13);
+            
+            // Initialisation des données secondaires
+            data.trains[data.count].reel = data.trains[data.count].prevu; 
+            data.trains[data.count].alerte = "";
+            
+            data.count++;
+          }
         }
-        if (millis() - lastDataTime > 10000) {
-          timeout = true;
-          break;
-        }
-        delay(1);
+        
+        Serial.print(" Receive JSON parsing reussi : ");
+        Serial.print(data.count);
+        Serial.println(" train(s) extrait(s)");
       }
-      Serial.print(" Receive ");
-      Serial.println(bytesReceived);
 
     } else {
       Serial.print("Erreur HTTP Journeys: ");
       Serial.println(httpCode);
     }
-    http.end();  // Libère proprement la connexion
+    
+    http.end();
   } else {
     Serial.println("Erreur : WiFi non connecté.");
   }
@@ -170,7 +217,6 @@ void printJourneyData(const JourneyData &data) {
                   alerteTxt.c_str());
   }
   Serial.println("------------------------------------------------------------");
-  Serial.println("\nAffichage termine. Mise en veille de l'ecran.\n");
 }
 
 void printDepartureData(const DepartureData &data) {

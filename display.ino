@@ -11,6 +11,28 @@ void init_screen() {
   display.setFullWindow();
 }
 
+void afficherEcranDemarrage() {
+  display.setFullWindow();
+  display.firstPage();
+  do {
+    display.fillScreen(GxEPD_WHITE);
+    display.setTextColor(GxEPD_BLACK);
+    
+    // Titre principal
+    display.setCursor(40, 50);
+    display.print("SNCF - LABEGE");
+    
+    // Sous-titre ou destination
+    display.setCursor(45, 80);
+    display.print("Vers Toulouse");
+    
+    // Message de chargement
+    display.setCursor(10, 120);
+    display.print("Connexion et mise a jour...");
+    
+  } while (display.nextPage());
+}
+
 // =========================================================================
 // FONCTION UTILITAIRE : Dessine UNE SEULE ligne de train
 // =========================================================================
