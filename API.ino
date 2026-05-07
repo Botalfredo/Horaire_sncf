@@ -1,5 +1,4 @@
-String ID_LABEGE = "stop_area:SNCF:87612002";
-String ID_TOULOUSE = "stop_area:SNCF:87611004";
+// Helper 
 
 class BufferedStream : public Stream {
   Stream& _stream;
@@ -31,24 +30,38 @@ public:
   size_t write(uint8_t c) override { return _stream.write(c); }
 };
 
+String ID_LABEGE = "stop_area:SNCF:87612002";
+String ID_TOULOUSE = "stop_area:SNCF:87611004";
+
 void fetchJourneysData(JourneyData &data) {
-  Serial.println("\nfetchJourneysData()");
+Serial.println("\n--- fetchJourneysData() ---");
+  
+  // 1. VÉRIFICATION DE LA MÉMOIRE RAM LIBRE
+  Serial.printf("RAM Libre avant connexion : %d octets\n", ESP.getFreeHeap());
+  
   data.count = 0;
 
   if (WiFi.status() == WL_CONNECTED) {
     WiFiClientSecure client;
-    client.setInsecure();
-    client.setTimeout(20000);
+    client.setInsecure(); // Accepte tous les certificats (nécessaire)
+    
+    // 2. AJOUT DES TIMEOUTS SPÉCIFIQUES POUR LE SSL/TLS
+    client.setHandshakeTimeout(20); // 20 secondes max pour le handshake SSL
+    client.setTimeout(20);          // 20 secondes pour le stream
 
     HTTPClient http;
-    http.setTimeout(20000);
+    http.setTimeout(20000); // 20000 millisecondes (20s) pour la lib HTTPClient
 
     String url = "https://api.navitia.io/v1/coverage/sncf/journeys?from=stop_area:SNCF:87612002&to=stop_area:SNCF:87611004&min_nb_journeys=4";
-
+    
+    Serial.println("Tentative de connexion au serveur (Handshake en cours)...");
+    
+    // Le code bloque généralement pendant l'exécution de http.begin ou http.GET
     http.begin(client, url);
     http.setAuthorization(api_key, "");
     http.useHTTP10(true);
 
+    Serial.println("Envoi de la requete GET...");
     int httpCode = http.GET();
 
     Serial.print("Journeys httpcode : ");
@@ -66,7 +79,7 @@ void fetchJourneysData(JourneyData &data) {
       DynamicJsonDocument doc(4096);
 
       // On désérialise depuis notre flux rapide
-      DeserializationError error = deserializeJson(doc, buffStream, DeserializationOption::Filter(filter));
+      DeserializationError error = deserializeJson(doc, buffStream, DeserializationOption::Filter(filter), DeserializationOption::NestingLimit(30));
 
       if (error) {
         Serial.print("Erreur JSON (Journeys): ");
@@ -373,3 +386,4 @@ int calculerRetard(String baseTime, String realTime) {
 
   return (int)difftime(tReal, tBase) / 60;
 }
+

@@ -1,7 +1,7 @@
 void init_IO() {
-  pinMode(10, OUTPUT);
-  pinMode(6, OUTPUT);
-  pinMode(7, OUTPUT);
+pinMode(EPD_CS, OUTPUT);
+  pinMode(EPD_RST, OUTPUT);
+  pinMode(EPD_DC, OUTPUT);
 }
 
 void init_Time() {
